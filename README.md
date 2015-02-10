@@ -1,4 +1,4 @@
-# Pandoc Generator
+# Pandoc Generator (Pelidoc)
 
 A Pelican plugin to use Pandoc software.
 
@@ -22,7 +22,7 @@ Then, put the plugin directory in your plugin directory. For instance, create a 
 
 ```python
 PLUGIN_PATHS = ['plugins']
-PLUGINS = ['pandoc']
+PLUGINS = ['Pelidoc']
 ```
 
 Obviously, you'll have to adapt instructions if you already have installed some plugins.

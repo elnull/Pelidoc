@@ -146,7 +146,7 @@ class PandocGenerator(Generator):
         If PANDOC_EXPORT_PAGES is False, pages are not generated.
 
         We don't use the writer passed as argument since we write our own
-        files (© PDF plugin :)).
+        files ((c) PDF plugin :)).
 
         """
         contents_to_export = []

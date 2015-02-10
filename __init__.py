@@ -1,1 +1,1 @@
-from .pandoc import register
+from .pelidoc import register
