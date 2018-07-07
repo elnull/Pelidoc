@@ -76,6 +76,16 @@ class PandocGenerator(Generator):
 
         return formats[file_extension]
 
+    def check_output_dir(self, dir_):
+        """Check and create if needed the given directory."""
+        if not os.path.isdir(dir_):
+            try:
+                os.mkdir(dir_)
+            except OSError:
+                return False
+
+        return True
+
     def generate_files(self, content):
         """Generates the list of files for a given content.
 
@@ -86,25 +96,20 @@ class PandocGenerator(Generator):
         try:
             from_format = self.guess_format(content)
         except KeyError:
-            # The content format is not supported.
+            logger.error("Unsupported format for {filename}".format(
+                filename=content.source_path
+            ))
             return
 
         list_outputs = self.settings.get('PANDOC_OUTPUTS', {})
         for to_format, output_dir in list_outputs.items():
             output_dir = os.path.join(self.output_path, output_dir)
 
-            # Create the output directory if it does not exist yet.
-            # TODO: this big-block is quite ugly, please move it elsewhere.
-            if not os.path.isdir(output_dir):
-                try:
-                    os.mkdir(output_dir)
-                except OSError:
-                    logger.error(
-                        "Couldn't create the {format} output folder in {dir}".format(
-                            format=to_format,
-                            dir=output_dir
-                        )
-                    )
+            if not self.check_output_dir(output_dir):
+                logger.error("Couldn't create the {format} output "
+                             "folder in {dir}".format(format=to_format,
+                                                      dir=output_dir))
+                continue
 
             filename = "{id_file}.{extension}".format(
                 id_file=content.slug,
@@ -112,14 +117,11 @@ class PandocGenerator(Generator):
             )
             filepath = os.path.join(output_dir, filename)
 
-            if to_format == 'pdf':
-                # Pandoc don't take "pdf" as an output value.
-                # Use latex instead.
-                to_format = 'latex'
-
-            if from_format == 'md':
-                # Use the same format as Pelican (paticularly for metadata!)
-                from_format = 'markdown_mmd'
+            # Pandoc don't take "pdf" as an output value. Use latex instead.
+            to_format = 'latex' if to_format == 'pdf' else to_format
+            # Use the same format as Pelican (paticularly for metadata!)
+            from_format = 'markdown_mmd' if from_format == 'md'\
+                else from_format
 
             # Here is the magic!
             # TODO: support extra_args extending (it could be useful to use
