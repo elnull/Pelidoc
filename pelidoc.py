@@ -18,8 +18,11 @@ PANDOC_EXPORT_ARTICLES  True (default) if you want to export articles, False
                         else.
 PANDOC_EXPORT_PAGES     True (default) if you want to export pages, False else.
 
-Important note: this plugin requires Pandoc and pypandoc to be installed on
-your system to work!
+PANDOC_MARKDOWN_EXTENSIONS  a list with Pandoc's markdown extensions
+PANDOC_EXECUTABLE       path to pandoc executable
+PANDOC_EXTRA_OPTIONS    extra options to pandoc executable
+
+Important note: this plugin requires Pandoc to be installed on your system to work!
 
 """
 
@@ -31,9 +34,7 @@ import logging
 from pelican import signals
 from pelican.generators import Generator
 
-# TODO: it could be great to not depend on an external module for such a basic
-# work.
-import pypandoc
+from subprocess import check_call
 
 
 logger = logging.getLogger(__name__)
@@ -93,6 +94,10 @@ class PandocGenerator(Generator):
         :type content: pelican.contents.Content
 
         """
+
+        if self.settings.get('PDF_PROCESSOR', False) == False:
+            return
+
         try:
             from_format = self.guess_format(content)
         except KeyError:
@@ -120,22 +125,17 @@ class PandocGenerator(Generator):
             # Pandoc don't take "pdf" as an output value. Use latex instead.
             to_format = 'latex' if to_format == 'pdf' else to_format
             # Use the same format as Pelican (paticularly for metadata!)
-            from_format = 'markdown_mmd' if from_format == 'md'\
-                else from_format
+            if from_format == 'md':
+                from_format = 'markdown' + \
+                        ''.join(self.settings.get('PANDOC_MARKDOWN_EXTENSIONS', []))
 
             # Here is the magic!
             # TODO: support extra_args extending (it could be useful to use
             # specific Pandoc template).
-            pypandoc.convert(
-                source=content.source_path,
-                to=to_format,
-                format=from_format,
-                extra_args=(
-                    '--smart',
-                    '--standalone',
-                    '-o', filepath,
-                )
-            )
+            check_call([self.settings.get('PANDOC_EXECUTABLE', 'pandoc')] +
+                       self.settings.get('PANDOC_EXTRA_OPTIONS', []) +
+                       ['-f', from_format, '-t', to_format ] +
+                       ['--standalone', '-o', filepath, content.source_path])
 
             logger.info("[ok] writing {filepath}".format(
                 filepath=filepath
